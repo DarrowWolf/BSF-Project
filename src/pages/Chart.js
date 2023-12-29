@@ -14,14 +14,69 @@ const Chart = () => {
 	const [items, setItems] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [selectedDataKey, setSelectedDataKey] = useState("Both"); // Default to "Both"
+	const [selectedTimeRange, setSelectedTimeRange] = useState("All"); // Default to "All"
+
+	const formatTimestamp = (timestamp) => {
+		const formattedTime = new Date(timestamp * 1000);
+		// Extract hours, minutes, and seconds
+		const hours = formattedTime.getHours();
+		const minutes = formattedTime.getMinutes();
+		const seconds = formattedTime.getSeconds();
+		// Convert to 12-hour format
+		const ampm = hours >= 12 ? "PM" : "AM";
+		const formattedHours = hours % 12 || 12;
+		// Construct formatted time string
+		const formattedTimeString = `${formattedHours}:${minutes}${ampm}`;
+		return formattedTimeString;
+	};
+
+	const filterDataByTimeRange = (data, timeRange) => {
+		const currentDate = new Date();
+		switch (timeRange) {
+			case "Today":
+				return data.filter((item) => {
+					const itemDate = new Date(item.Timestamp * 1000);
+					return (
+						itemDate.getDate() === currentDate.getDate() &&
+						itemDate.getMonth() === currentDate.getMonth() &&
+						itemDate.getFullYear() === currentDate.getFullYear()
+					);
+				});
+			case "Past7Days":
+				const sevenDaysAgo = new Date();
+				sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+				return data.filter(
+					(item) => new Date(item.Timestamp * 1000) >= sevenDaysAgo
+				);
+			case "ThisMonth":
+				return data.filter((item) => {
+					const itemDate = new Date(item.Timestamp * 1000);
+					return (
+						itemDate.getMonth() === currentDate.getMonth() &&
+						itemDate.getFullYear() === currentDate.getFullYear()
+					);
+				});
+			default:
+				return data;
+		}
+	};
 
 	const fetchData = async () => {
 		try {
 			const fetchedData = await fetchDataFromDynamoDB();
-			const itemsWithNewIds = fetchedData.map((item, index) => ({
+			fetchedData.sort((a, b) => a.Timestamp - b.Timestamp);
+
+			const filteredData = filterDataByTimeRange(
+				fetchedData,
+				selectedTimeRange
+			);
+
+			const itemsWithNewIds = filteredData.map((item, index) => ({
 				...item,
 				Sensor_Id: index + 1,
+				Timestamp: formatTimestamp(item.Timestamp),
 			}));
+
 			setItems(itemsWithNewIds);
 			setLoading(false);
 		} catch (error) {
@@ -32,16 +87,20 @@ const Chart = () => {
 	useEffect(() => {
 		const fetchDataAndAnimate = async () => {
 			await fetchData();
-			const interval = setInterval(fetchData, 5000);
+			const interval = setInterval(fetchData, 120000);
 
 			return () => clearInterval(interval);
 		};
 
 		fetchDataAndAnimate();
-	}, []);
+	}, [selectedTimeRange]);
 
 	const handleDataKeyChange = (newDataKey) => {
 		setSelectedDataKey(newDataKey);
+	};
+
+	const handleTimeRangeChange = (newTimeRange) => {
+		setSelectedTimeRange(newTimeRange);
 	};
 
 	const renderTooltipContent = (props) => {
@@ -58,15 +117,7 @@ const Chart = () => {
 		});
 
 		return (
-			<div
-				className="custom-tooltip"
-				style={{
-					background: "#fff",
-					border: "1px solid #ccc",
-					padding: "10px",
-					borderRadius: "5px",
-				}}
-			>
+			<div className="custom-tooltip">
 				<p>{label}</p>
 				{temperatureValue && <p>Temperature: {temperatureValue}</p>}
 				{humidityValue && <p>Humidity: {humidityValue}</p>}
@@ -89,6 +140,19 @@ const Chart = () => {
 					<option value="Temperature">Temperature</option>
 					<option value="Humidity">Humidity</option>
 				</select>
+
+				{/* Dropdown to select time range */}
+				<label htmlFor="timeRangeSelect">Select Time Range:</label>
+				<select
+					id="timeRangeSelect"
+					value={selectedTimeRange}
+					onChange={(e) => handleTimeRangeChange(e.target.value)}
+				>
+					<option value="All">All</option>
+					<option value="Today">Today</option>
+					<option value="Past7Days">Past 7 Days</option>
+					<option value="ThisMonth">This Month</option>
+				</select>
 			</div>
 
 			<ul>
@@ -96,19 +160,15 @@ const Chart = () => {
 					<li key={item.Sensor_Id}>
 						Sensor Check: {item.Sensor_Id},{" "}
 						{selectedDataKey === "Both"
-							? "Temperature: " +
-							  item.Temperature +
-							  "°C, Humidity: " +
-							  item.Humidity +
-							  "%"
-							: selectedDataKey + ": " + item[selectedDataKey]}
+							? `Temperature: ${item.Temperature}°C, Humidity: ${item.Humidity}%`
+							: `${selectedDataKey}: ${item[selectedDataKey]}`}
 					</li>
 				))}
 			</ul>
 
 			{!loading && items.length > 0 && (
-				<LineChart width={800} height={300} data={items}>
-					<XAxis dataKey="Sensor_Id" />
+				<LineChart width={600} height={300} data={items}>
+					<XAxis dataKey="Timestamp" />
 					<YAxis />
 					<CartesianGrid stroke="#eee" strokeDasharray="5 5" />
 					{selectedDataKey === "Both" ? (
