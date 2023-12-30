@@ -9,6 +9,8 @@ import {
 	Tooltip,
 	Legend,
 } from "recharts";
+import Dropdown from "../components/dropdown-menu";
+import Loading from "../components/loading";
 
 const Chart = () => {
 	const [items, setItems] = useState([]);
@@ -125,12 +127,15 @@ const Chart = () => {
 		);
 	};
 
-	return (
-		<div>
-			<h1>Data from DynamoDB Table</h1>
-			<div>
-				{/* Dropdown to select data key */}
-				<label htmlFor="dataKeySelect">Select Data:</label>
+	return loading ? (
+		<Loading />
+	) : (
+		<div className="min-h-screen flex items-center justify-center">
+			<div className="text-center">
+				<h1 className="text-4xl font-bold mb-6">Data from DynamoDB Table</h1>
+				<div className="">
+					{/* Dropdown to select data key */}
+					{/* <label htmlFor="dataKeySelect">Select Data:</label>
 				<select
 					id="dataKeySelect"
 					value={selectedDataKey}
@@ -139,10 +144,10 @@ const Chart = () => {
 					<option value="Both">Both</option>
 					<option value="Temperature">Temperature</option>
 					<option value="Humidity">Humidity</option>
-				</select>
+				</select> */}
 
-				{/* Dropdown to select time range */}
-				<label htmlFor="timeRangeSelect">Select Time Range:</label>
+					{/* Dropdown to select time range */}
+					{/* <label htmlFor="timeRangeSelect">Select Time Range:</label>
 				<select
 					id="timeRangeSelect"
 					value={selectedTimeRange}
@@ -153,9 +158,36 @@ const Chart = () => {
 					<option value="Past7Days">Past 7 Days</option>
 					<option value="ThisMonth">This Month</option>
 				</select>
-			</div>
+				 */}
 
-			<ul>
+					<Dropdown
+						title="Select Time Range"
+						description="Select a filter option:"
+						options={[
+							{ label: "All", value: "All" },
+							{ label: "Today", value: "Today" },
+							{ label: "Past 7 Days", value: "Past7Days" },
+							{ label: "This Month", value: "ThisMonth" },
+						]}
+						onSelectOption={(selectedOption) =>
+							handleTimeRangeChange(selectedOption)
+						}
+					/>
+					<Dropdown
+						title="Select Data"
+						description="Select a filter option:"
+						options={[
+							{ label: "Both", value: "Both" },
+							{ label: "Temperature", value: "Temperature" },
+							{ label: "Humidity", value: "Humidity" },
+						]}
+						onSelectOption={(selectedOption) =>
+							handleDataKeyChange(selectedOption)
+						}
+					/>
+				</div>
+
+				{/* <ul>
 				{items.map((item) => (
 					<li key={item.Sensor_Id}>
 						Sensor Check: {item.Sensor_Id},{" "}
@@ -164,49 +196,63 @@ const Chart = () => {
 							: `${selectedDataKey}: ${item[selectedDataKey]}`}
 					</li>
 				))}
-			</ul>
+			</ul> */}
 
-			{!loading && items.length > 0 && (
-				<LineChart width={600} height={300} data={items}>
-					<XAxis dataKey="Timestamp" />
-					<YAxis />
-					<CartesianGrid stroke="#eee" strokeDasharray="5 5" />
-					{selectedDataKey === "Both" ? (
-						<>
-							<Line
-								type="monotone"
-								dataKey="Temperature"
-								stroke="#8884d8"
-								name="Temperature"
-								isAnimationActive={true}
-								animationBegin={0}
-								animationDuration={2000}
-							/>
-							<Line
-								type="monotone"
-								dataKey="Humidity"
-								stroke="#82ca9d"
-								name="Humidity"
-								isAnimationActive={true}
-								animationBegin={0}
-								animationDuration={2000}
-							/>
-						</>
+				<div className="pt-10 border-2 rounded">
+					{loading ? (
+						<Loading />
 					) : (
-						<Line
-							type="monotone"
-							dataKey={selectedDataKey}
-							stroke={selectedDataKey === "Temperature" ? "#8884d8" : "#82ca9d"}
-							name={selectedDataKey}
-							isAnimationActive={true}
-							animationBegin={0}
-							animationDuration={2000}
-						/>
+						items.length > 0 && (
+							<LineChart
+								width={900}
+								height={450}
+								data={items}
+								margin={{ top: 5, right: 40, left: 20, bottom: 5 }}
+							>
+								<XAxis dataKey="Timestamp" />
+								<YAxis />
+								<CartesianGrid stroke="#eee" strokeDasharray="5 5" />
+								{selectedDataKey === "Both" ? (
+									<>
+										<Line
+											type="monotone"
+											dataKey="Temperature"
+											stroke="#8884d8"
+											name="Temperature"
+											isAnimationActive={true}
+											animationBegin={0}
+											animationDuration={2000}
+										/>
+										<Line
+											type="monotone"
+											dataKey="Humidity"
+											stroke="#82ca9d"
+											name="Humidity"
+											isAnimationActive={true}
+											animationBegin={0}
+											animationDuration={2000}
+										/>
+									</>
+								) : (
+									<Line
+										type="monotone"
+										dataKey={selectedDataKey}
+										stroke={
+											selectedDataKey === "Temperature" ? "#8884d8" : "#82ca9d"
+										}
+										name={selectedDataKey}
+										isAnimationActive={true}
+										animationBegin={0}
+										animationDuration={2000}
+									/>
+								)}
+								<Tooltip content={renderTooltipContent} />
+								<Legend />
+							</LineChart>
+						)
 					)}
-					<Tooltip content={renderTooltipContent} />
-					<Legend />
-				</LineChart>
-			)}
+				</div>
+			</div>
 		</div>
 	);
 };
