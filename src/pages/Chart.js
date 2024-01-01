@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import Dropdown from "../components/dropdown-menu";
 import Loading from "../components/loading";
+import NavBar from "../components/NavBar";
 
 const Chart = () => {
 	const [temperatureData, setTemperatureData] = useState([]);
@@ -95,6 +96,34 @@ const Chart = () => {
 				return { filteredData: data, averages: allAverages };
 		}
 	};
+	const formatDateRange = (timeRange) => {
+		const currentDate = new Date();
+
+		switch (timeRange) {
+			case "Today":
+				return "Today";
+
+			case "Past7Days":
+				const sevenDaysAgo = new Date();
+				sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+				return `${formatDate(sevenDaysAgo)} to ${formatDate(currentDate)}`;
+
+			case "ThisMonth":
+				const startOfMonth = new Date(
+					currentDate.getFullYear(),
+					currentDate.getMonth(),
+					1
+				);
+				return `${formatDate(startOfMonth)} to ${formatDate(currentDate)}`;
+
+			default:
+				return "All";
+		}
+	};
+
+	const formatDate = (date) => {
+		return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+	};
 
 	const fetchData = async () => {
 		try {
@@ -172,94 +201,105 @@ const Chart = () => {
 	return loading ? (
 		<Loading />
 	) : (
-		<div className="min-h-screen flex items-center justify-center">
-			<div className="text-center">
-				<h1 className="text-4xl font-bold mb-4">Data from DynamoDB Table</h1>
-				<h1 className="mb-4">
-					Data is taken from the sensors every 25 minutes
-				</h1>
-				<div className="flex justify-end">
-					{/* Dropdown to select time range */}
-					<Dropdown
-						title="Select Time Range"
-						description="Select a filter option:"
-						options={[
-							{ label: "All", value: "All" },
-							{ label: "Today", value: "Today" },
-							{ label: "Past 7 Days", value: "Past7Days" },
-							{ label: "This Month", value: "ThisMonth" },
-						]}
-						onSelectOption={(selectedOption) =>
-							handleTimeRangeChange(selectedOption)
-						}
-					/>
-				</div>
+		<div>
+			<NavBar />
+			<div className="min-h-screen flex items-center justify-center">
+				<div className="text-center">
+					<h1 className="text-4xl font-bold mb-4">Data from DynamoDB Table</h1>
+					<h1 className="mb-4">
+						Data is taken from the sensors every 25 minutes (Will change to 5
+						minutes)
+					</h1>
+					<div className="flex justify-end">
+						{/* Dropdown to select time range */}
+						<Dropdown
+							title="Select Time Range"
+							description="Select a filter option:"
+							options={[
+								{ label: "All", value: "All" },
+								{ label: "Today", value: "Today" },
+								{ label: "Past 7 Days", value: "Past7Days" },
+								{ label: "This Month", value: "ThisMonth" },
+							]}
+							onSelectOption={(selectedOption) =>
+								handleTimeRangeChange(selectedOption)
+							}
+						/>
+					</div>
+					<div className="text-center mb-4">
+						{/* Display the chosen date range */}
+						{selectedTimeRange !== "All" && (
+							<p>Displaying data for: {formatDateRange(selectedTimeRange)}</p>
+						)}
+					</div>
 
-				<div className="pt-10 border-2 rounded">
-					{loading ? (
-						<Loading />
-					) : (
-						<>
-							{temperatureData.length > 0 && (
-								<LineChart
-									width={900}
-									height={200}
-									data={temperatureData}
-									margin={{ top: 5, right: 40, left: 20, bottom: 5 }}
-								>
-									{/* Temperature Chart */}
-									<XAxis dataKey="Timestamp" />
-									<YAxis />
-									<CartesianGrid stroke="#eee" strokeDasharray="5 5" />
-									<Line
-										type="monotone"
-										dataKey="Temperature"
-										stroke="#8884d8"
-										name="Temperature"
-										isAnimationActive={true}
-										animationBegin={0}
-										animationDuration={2000}
-									/>
-									<Tooltip content={renderTooltipContent} />
-									<Legend />
-								</LineChart>
-							)}
+					<div className="pt-10 border-2 rounded">
+						{loading ? (
+							<Loading />
+						) : (
+							<>
+								{temperatureData.length > 0 && (
+									<LineChart
+										width={900}
+										height={200}
+										data={temperatureData}
+										margin={{ top: 5, right: 40, left: 20, bottom: 5 }}
+									>
+										{/* Temperature Chart */}
+										<XAxis dataKey="Timestamp" />
+										<YAxis />
+										<CartesianGrid stroke="#eee" strokeDasharray="5 5" />
+										<Line
+											type="monotone"
+											dataKey="Temperature"
+											stroke="#8884d8"
+											name="Temperature"
+											isAnimationActive={true}
+											animationBegin={0}
+											animationDuration={2000}
+										/>
+										<Tooltip content={renderTooltipContent} />
+										<Legend />
+									</LineChart>
+								)}
 
-							{humidityData.length > 0 && (
-								<LineChart
-									width={900}
-									height={200}
-									data={humidityData}
-									margin={{ top: 5, right: 40, left: 20, bottom: 5 }}
-								>
-									{/* Humidity Chart */}
-									<XAxis dataKey="Timestamp" />
-									<YAxis />
-									<CartesianGrid stroke="#eee" strokeDasharray="5 5" />
-									<Line
-										type="monotone"
-										dataKey="Humidity"
-										stroke="#82ca9d"
-										name="Humidity"
-										isAnimationActive={true}
-										animationBegin={0}
-										animationDuration={2000}
-									/>
-									<Tooltip content={renderTooltipContent} />
-									<Legend />
-								</LineChart>
-							)}
-						</>
-					)}
-					{averages && (
-						<div className="my-4 text-center">
-							<h2 className="text-xl font-semibold">Average Values</h2>
-							<p>
-								Average Temperature: {averages.averageTemperature.toFixed(2)}°C
-							</p>
-							<p>Average Humidity: {averages.averageHumidity.toFixed(2)}%</p>
-						</div>
-					)}
+								{humidityData.length > 0 && (
+									<LineChart
+										width={900}
+										height={200}
+										data={humidityData}
+										margin={{ top: 5, right: 40, left: 20, bottom: 5 }}
+									>
+										{/* Humidity Chart */}
+										<XAxis dataKey="Timestamp" />
+										<YAxis />
+										<CartesianGrid stroke="#eee" strokeDasharray="5 5" />
+										<Line
+											type="monotone"
+											dataKey="Humidity"
+											stroke="#82ca9d"
+											name="Humidity"
+											isAnimationActive={true}
+											animationBegin={0}
+											animationDuration={2000}
+										/>
+										<Tooltip content={renderTooltipContent} />
+										<Legend />
+									</LineChart>
+								)}
+							</>
+						)}
+						{averages && (
+							<div className="my-4 text-center">
+								<h2 className="text-xl font-semibold">Average Values</h2>
+								<p>
+									Average Temperature: {averages.averageTemperature.toFixed(2)}
+									°C
+								</p>
+								<p>Average Humidity: {averages.averageHumidity.toFixed(2)}%</p>
+							</div>
+						)}
+					</div>
 				</div>
 			</div>
 		</div>

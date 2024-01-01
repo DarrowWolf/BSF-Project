@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import React, { useState, useEffect } from "react";
-import Home from "./pages/index";
+import Home from "./pages/Chart";
 import Chart from "./pages/Chart";
-import Test from "./pages/Test";
+import Raw from "./pages/index";
 import { NextUIProvider } from "@nextui-org/system";
 
 export default function App() {
@@ -12,8 +12,8 @@ export default function App() {
 				<BrowserRouter>
 					<Routes>
 						<Route index element={<Home />} />
+						<Route path="/raw" element={<Raw />} />
 						<Route path="/chart" element={<Chart />} />
-						<Route path="/test" element={<Test />} />
 					</Routes>
 				</BrowserRouter>
 			</div>
